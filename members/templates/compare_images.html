@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compare Images</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+    <form method="post" enctype="multipart/form-data" action="{% url 'compare_images' %}">
+        {% csrf_token %}
+        <input type="file" name="zip_file" accept=".zip" required>
+        <button type="submit">Compare Images</button>
+    </form>
+
+    {% if duplicate_images %}
+        <h2>Duplicate Images:</h2>
+        <form id="duplicate-form" method="post" action="{% url 'process_selected_duplicates' %}">
+            {% csrf_token %}
+            <ul>
+                {% for img_pair in duplicate_images %}
+                    <li>
+                        <strong>Duplicate image path in Zip File:</strong> {{ img_pair.0 }}<br>
+                        <strong>Duplicate image path in Server path:</strong> {{ img_pair.1 }}
+                        <br>
+                        <img src="/media/{{ img_pair.1 }}" alt="Existing Image" style="max-width: 300px; max-height: 300px;">
+                        <br>
+                        <select class="image-select" name="selected_images[]">
+                            <option value="" data-path="{{ img_pair.0 }}">selected_duplicates</option>
+                            <option value="{{ img_pair.1 }}" data-path="{{ img_pair.0 }}">Save this image</option>
+                            <option value="no_save" data-path="{{ img_pair.0 }}">Don't save this image</option>
+                        </select>                                                                    
+                    </li>
+                {% endfor %}
+            </ul>
+            <button type="button" id="process-btn">Process Selected Duplicates</button>
+        </form>
+    {% endif %}
+
+    <script>
+        $(document).ready(function() {
+            $("#process-btn").on("click", function() {
+                var selectedImages = [];
+
+                // Iterate over each select box to get selected images
+                $(".image-select").each(function() {
+                    var imagePath = $(this).val();
+                    var zipFilePath = $(this).find("option:selected").data("path");
+
+                    if (imagePath !== "" && imagePath !== "no_save") {
+                        selectedImages.push({ path: imagePath, zipPath: zipFilePath });
+                    }
+                });
+
+                // Update the hidden input field with the selected images
+                $("#selected-images-input").val(JSON.stringify(selectedImages));
+
+                // Submit the form
+                $("#duplicate-form").submit();
+            });
+        });
+    </script>
+</body>
+</html>
